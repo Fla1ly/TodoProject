@@ -14,6 +14,77 @@ import '@fontsource/roboto'
 import './styling/main.css'
 import Box from '@mui/material/Box';
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
+import Alert from '@mui/material/Alert';
+import Drawer from '@mui/material/Drawer';
+import CssBaseline from '@mui/material/CssBaseline';
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import List from '@mui/material/List';
+import Divider from '@mui/material/Divider';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import InboxIcon from '@mui/icons-material/MoveToInbox';
+import MailIcon from '@mui/icons-material/Mail';
+import { styled } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
+
+
+const drawerWidth = 240;
+
+import { Theme } from '@mui/material/styles';
+import { Padding } from '@mui/icons-material';
+
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
+  theme: Theme; open?: boolean;
+}>(({ theme, open }) => ({
+  flexGrow: 1,
+  padding: theme.spacing(3),
+  transition: theme.transitions.create('margin', {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.leavingScreen,
+  }),
+  marginLeft: `-${drawerWidth}px`,
+  ...(open && {
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+    marginLeft: 0,
+  }),
+}));
+
+
+
+interface AppBarProps extends MuiAppBarProps {
+  open?: boolean;
+}
+
+const AppBar = styled(MuiAppBar, { shouldForwardProp: (prop) => prop !== 'open' })<AppBarProps>(({ theme, open }) => ({
+  transition: theme.transitions.create(['margin', 'width'], {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.leavingScreen,
+  }),
+  ...(open && {
+    width: `calc(100% - ${drawerWidth}px)`,
+    marginLeft: `${drawerWidth}px`,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  }),
+}));
+const DrawerHeader = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: theme.spacing(0, 1),
+  ...theme.mixins.toolbar,
+  justifyContent: 'flex-end',
+}));
 
 
 interface TodoRow {
@@ -65,11 +136,23 @@ const style = {
 
 const Home: React.FC = () => {
   const [open, setOpen] = React.useState(false);
+  const [openDrawer, setOpenDrawer] = React.useState(false);
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [todos, setTodos] = React.useState<Todo[]>([]);
   const [rows, setRows] = React.useState<TodoRow[]>([]);
   const [todoId, setTodoId] = React.useState<number>(0);
+  const [showAlert, setShowAlert] = React.useState<boolean>(false);
+  const [showAlertDelete, setShowAlertDelete] = React.useState<boolean>(false);
+  const theme = useTheme();
+
+  const handleDrawerOpen = () => {
+    setOpenDrawer(true);
+  };
+
+  const handleDrawerClose = () => {
+    setOpenDrawer(false);
+  };
 
   useEffect(() => {
     const storedTodos = localStorage.getItem('todos');
@@ -88,6 +171,7 @@ const Home: React.FC = () => {
     (id: number) => {
       const updatedTodos = todos.filter((todo) => todo.id !== id);
       const updatedRows = rows.filter((row) => row.id !== id);
+      setShowAlertDelete(true);
 
       setTodos(updatedTodos);
       setRows(updatedRows);
@@ -108,20 +192,91 @@ const Home: React.FC = () => {
   const handleSubmit = () => {
     const newTodo = { id: todoId, title, description };
     const newRows = [...rows, { id: todoId, title: newTodo.title, description: newTodo.description }];
-
+    setShowAlert(true);
     setTodos((oldTodos) => [...oldTodos, newTodo]);
     setRows(newRows);
     localStorage.setItem('todos', JSON.stringify([...todos, newTodo]));
     setTodoId((prevTodoId) => prevTodoId + 1);
     setTitle('');
     setDescription('');
+    setOpen(false);
   };
 
   return (
     <Stack spacing={2} sx={{ display: 'flex', alignItems: 'center', fontFamily: 'Roboto' }}>
-      <Typography variant='h1' sx={{}}>To do list</Typography>
-      <Button variant='contained' onClick={handleOpen}>Add todo</Button>
-      <Stack>
+      <CssBaseline />
+      <AppBar position="fixed" open={open}>
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={handleDrawerOpen}
+            edge="start"
+            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div">
+            To do list
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Drawer
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+          },
+        }}
+        variant="persistent"
+        anchor="left"
+        open={open}
+      >
+        <DrawerHeader>
+          <IconButton onClick={handleDrawerClose}>
+            {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+          </IconButton>
+        </DrawerHeader>
+        <Divider />
+        <List>
+          {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
+            <ListItem key={text} disablePadding>
+              <ListItemButton>
+                <ListItemIcon>
+                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+                </ListItemIcon>
+                <ListItemText primary={text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+        <Divider />
+        <List>
+          {['All mail', 'Trash', 'Spam'].map((text, index) => (
+            <ListItem key={text} disablePadding>
+              <ListItemButton>
+                <ListItemIcon>
+                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+                </ListItemIcon>
+                <ListItemText primary={text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+      {showAlert && (
+        <Alert severity="success" onClose={() => setShowAlert(false)}>
+          Todo added!
+        </Alert>
+      )}
+      {showAlertDelete && (
+        <Alert severity="error" onClose={() => setShowAlertDelete(false)}>
+          Todo deleted!
+        </Alert>
+      )}
+      <Stack sx={{ paddingTop: '10%' }}>
         {todos.length === 0 ? (
           <CircularProgress />
         ) : (
@@ -133,7 +288,7 @@ const Home: React.FC = () => {
                   ...columns,
                   {
                     field: 'actions',
-                    headerName: 'Actions',
+                    headerName: 'Delete',
                     width: 120,
                     renderCell: (params) => (
                       <div>
@@ -145,10 +300,10 @@ const Home: React.FC = () => {
                   },
                 ]}
                 pageSize={5}
-                checkboxSelection
                 disableRowSelectionOnClick
               />
             </Box>
+            <Button variant='contained' onClick={handleOpen}>Add todo</Button>
           </Stack>
         )}
         <Modal
@@ -168,10 +323,8 @@ const Home: React.FC = () => {
         </Modal>
       </Stack>
 
-    </Stack>
+    </Stack >
   );
 }
-
-
 
 export default Home;
