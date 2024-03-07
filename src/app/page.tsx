@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Button from '@mui/material/Button';
 import { Typography, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -32,7 +33,12 @@ import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
-
+import ViewKanbanRoundedIcon from '@mui/icons-material/ViewKanbanRounded';
+import PendingActionsRoundedIcon from '@mui/icons-material/PendingActionsRounded';
+import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
+import AddTaskRoundedIcon from '@mui/icons-material/AddTaskRounded';
+import Link from 'next/link';
+import Snackbar from '@mui/material/Snackbar';
 
 const drawerWidth = 240;
 
@@ -78,6 +84,7 @@ const AppBar = styled(MuiAppBar, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
   }),
 }));
+
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -172,10 +179,8 @@ const Home: React.FC = () => {
       const updatedTodos = todos.filter((todo) => todo.id !== id);
       const updatedRows = rows.filter((row) => row.id !== id);
       setShowAlertDelete(true);
-
       setTodos(updatedTodos);
       setRows(updatedRows);
-
       localStorage.setItem('todos', JSON.stringify(updatedTodos));
     },
     [todos, rows]
@@ -205,14 +210,14 @@ const Home: React.FC = () => {
   return (
     <Stack spacing={2} sx={{ display: 'flex', alignItems: 'center', fontFamily: 'Roboto' }}>
       <CssBaseline />
-      <AppBar position="fixed" open={open}>
+      <AppBar position="fixed" open={openDrawer}>
         <Toolbar>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             onClick={handleDrawerOpen}
             edge="start"
-            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+            sx={{ mr: 2, ...(openDrawer && { display: 'none' }) }}
           >
             <MenuIcon />
           </IconButton>
@@ -232,7 +237,7 @@ const Home: React.FC = () => {
         }}
         variant="persistent"
         anchor="left"
-        open={open}
+        open={openDrawer}
       >
         <DrawerHeader>
           <IconButton onClick={handleDrawerClose}>
@@ -241,24 +246,14 @@ const Home: React.FC = () => {
         </DrawerHeader>
         <Divider />
         <List>
-          {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
+          {['All', 'Kanban', 'Archive', 'Pending'].map((text, index) => (
             <ListItem key={text} disablePadding>
               <ListItemButton>
                 <ListItemIcon>
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                </ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-        <Divider />
-        <List>
-          {['All mail', 'Trash', 'Spam'].map((text, index) => (
-            <ListItem key={text} disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+                  {index === 0 && <Link href="/" style={{ color: '#fff' }}><AssignmentRoundedIcon /></Link>}
+                  {index === 1 && <Link href="/kanban" style={{ color: '#fff' }}><ViewKanbanRoundedIcon /></Link>}
+                  {index === 2 && <Link href="/kanban" style={{ color: '#fff' }}><InboxIcon /></Link>}
+                  {index === 3 && <Link href="/kanban" style={{ color: '#fff' }}><PendingActionsRoundedIcon /></Link>}
                 </ListItemIcon>
                 <ListItemText primary={text} />
               </ListItemButton>
@@ -267,18 +262,28 @@ const Home: React.FC = () => {
         </List>
       </Drawer>
       {showAlert && (
-        <Alert severity="success" onClose={() => setShowAlert(false)}>
-          Todo added!
-        </Alert>
+        <Snackbar open={showAlert} autoHideDuration={6000} onClose={() => setShowAlert(false)}>
+          <Alert severity="success" onClose={() => setShowAlert(false)}>
+            Todo added!
+          </Alert>
+        </Snackbar>
       )}
       {showAlertDelete && (
-        <Alert severity="error" onClose={() => setShowAlertDelete(false)}>
-          Todo deleted!
-        </Alert>
+        <Snackbar open={showAlertDelete} autoHideDuration={6000} onClose={() => setShowAlertDelete(false)}>
+          <Alert severity="error" onClose={() => setShowAlertDelete(false)}>
+            Todo deleted!
+          </Alert>
+        </Snackbar>
       )}
       <Stack sx={{ paddingTop: '10%' }}>
         {todos.length === 0 ? (
-          <CircularProgress />
+          <>
+            <Stack spacing={2} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Typography variant='h4'>No todos</Typography>
+              <CircularProgress />
+              <Button variant='contained' onClick={handleOpen}>Add todo  <AddTaskRoundedIcon /></Button>
+            </Stack>
+          </>
         ) : (
           <Stack spacing={2} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Box sx={{ height: 400, width: '100%' }}>
@@ -303,7 +308,7 @@ const Home: React.FC = () => {
                 disableRowSelectionOnClick
               />
             </Box>
-            <Button variant='contained' onClick={handleOpen}>Add todo</Button>
+            <Button variant='contained' onClick={handleOpen}>Add todo  <AddTaskRoundedIcon /></Button>
           </Stack>
         )}
         <Modal
