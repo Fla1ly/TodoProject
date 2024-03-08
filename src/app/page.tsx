@@ -1,20 +1,19 @@
 'use client';
 import * as React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Button from '@mui/material/Button';
 import { Typography, TextField } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import { useCallback } from 'react';
 import Stack from '@mui/material/Stack';
 import Modal from '@mui/material/Modal';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import '@fontsource/roboto'
 import './styling/main.css'
 import Box from '@mui/material/Box';
-import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Alert from '@mui/material/Alert';
 import Drawer from '@mui/material/Drawer';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -30,7 +29,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 import ViewKanbanRoundedIcon from '@mui/icons-material/ViewKanbanRounded';
@@ -39,11 +37,10 @@ import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
 import AddTaskRoundedIcon from '@mui/icons-material/AddTaskRounded';
 import Link from 'next/link';
 import Snackbar from '@mui/material/Snackbar';
+import { Theme } from '@mui/material/styles';
 
 const drawerWidth = 240;
 
-import { Theme } from '@mui/material/styles';
-import { Padding } from '@mui/icons-material';
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
   theme: Theme; open?: boolean;
@@ -63,8 +60,6 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
     marginLeft: 0,
   }),
 }));
-
-
 
 interface AppBarProps extends MuiAppBarProps {
   open?: boolean;
@@ -93,7 +88,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   justifyContent: 'flex-end',
 }));
 
-
 interface TodoRow {
   id: number;
   title: string;
@@ -115,8 +109,6 @@ const columns: GridColDef[] = [
     editable: false,
   },
 ];
-
-let todoId: number = 0;
 
 interface Todo {
   id: number;
@@ -141,14 +133,31 @@ const style = {
   pb: 3,
 };
 
-const Home: React.FC = () => {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export default function Home() {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const router = useRouter()
+
   const [open, setOpen] = React.useState(false);
   const [openDrawer, setOpenDrawer] = React.useState(false);
-  const [title, setTitle] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [todos, setTodos] = React.useState<Todo[]>([]);
-  const [rows, setRows] = React.useState<TodoRow[]>([]);
-  const [todoId, setTodoId] = React.useState<number>(0);
   const [showAlert, setShowAlert] = React.useState<boolean>(false);
   const [showAlertDelete, setShowAlertDelete] = React.useState<boolean>(false);
   const theme = useTheme();
@@ -161,31 +170,6 @@ const Home: React.FC = () => {
     setOpenDrawer(false);
   };
 
-  useEffect(() => {
-    const storedTodos = localStorage.getItem('todos');
-    if (storedTodos) {
-      const parsedTodos = JSON.parse(storedTodos);
-      setTodos(parsedTodos);
-      setRows(parsedTodos.map((todo: Todo) => ({
-        id: todo.id,
-        title: todo.title,
-        description: todo.description,
-      })));
-    }
-  }, []);
-
-  const deleteTodo = useCallback(
-    (id: number) => {
-      const updatedTodos = todos.filter((todo) => todo.id !== id);
-      const updatedRows = rows.filter((row) => row.id !== id);
-      setShowAlertDelete(true);
-      setTodos(updatedTodos);
-      setRows(updatedRows);
-      localStorage.setItem('todos', JSON.stringify(updatedTodos));
-    },
-    [todos, rows]
-  );
-
   const handleOpen = () => {
     setOpen(true);
   };
@@ -194,17 +178,19 @@ const Home: React.FC = () => {
     setOpen(false);
   };
 
-  const handleSubmit = () => {
-    const newTodo = { id: todoId, title, description };
-    const newRows = [...rows, { id: todoId, title: newTodo.title, description: newTodo.description }];
-    setShowAlert(true);
-    setTodos((oldTodos) => [...oldTodos, newTodo]);
-    setRows(newRows);
-    localStorage.setItem('todos', JSON.stringify([...todos, newTodo]));
-    setTodoId((prevTodoId) => prevTodoId + 1);
-    setTitle('');
-    setDescription('');
-    setOpen(false);
+  const handleSubmit = async (e: React.SyntheticEvent) => {
+    e.preventDefault()
+    try {
+      const body = { title, description }
+      await fetch(`http://localhost:3000/api/addTodo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      router.push('/')
+    } catch (error) {
+      console.log(error)
+    }
   };
 
   return (
@@ -275,42 +261,7 @@ const Home: React.FC = () => {
           </Alert>
         </Snackbar>
       )}
-      <Stack sx={{ paddingTop: '10%' }}>
-        {todos.length === 0 ? (
-          <>
-            <Stack spacing={2} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Typography variant='h4'>No todos</Typography>
-              <CircularProgress />
-              <Button variant='contained' onClick={handleOpen}>Add todo  <AddTaskRoundedIcon /></Button>
-            </Stack>
-          </>
-        ) : (
-          <Stack spacing={2} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Box sx={{ height: 400, width: '100%' }}>
-              <DataGrid
-                rows={rows}
-                columns={[
-                  ...columns,
-                  {
-                    field: 'actions',
-                    headerName: 'Delete',
-                    width: 120,
-                    renderCell: (params) => (
-                      <div>
-                        <IconButton onClick={() => deleteTodo(params.row.id)}>
-                          <DeleteIcon sx={{ fontSize: 20, color: 'red' }} />
-                        </IconButton>
-                      </div>
-                    ),
-                  },
-                ]}
-                pageSize={5}
-                disableRowSelectionOnClick
-              />
-            </Box>
-            <Button variant='contained' onClick={handleOpen}>Add todo  <AddTaskRoundedIcon /></Button>
-          </Stack>
-        )}
+      <Button variant='contained' onClick={handleOpen}>Add todo  <AddTaskRoundedIcon /></Button>
         <Modal
           open={open}
           onClose={handleClose}
@@ -326,10 +277,7 @@ const Home: React.FC = () => {
             </Stack>
           </Box>
         </Modal>
-      </Stack>
-
     </Stack >
+    
   );
 }
-
-export default Home;
